@@ -26,6 +26,7 @@ export interface PostSummary {
     thumbnailUrl: string;
     remainingQuantity: number;
     category: string;
+    subCategory: string;
     status: PostStatus;
     closed: boolean;
 }
@@ -45,6 +46,7 @@ export interface PostDetail {
     title: string;
     description: string;
     category: string;
+    subCategory: string;
     imageUrls: string[];
     remainingQuantity: number;
     totalQuantity: number;
@@ -65,7 +67,7 @@ export type CreatePostRequest = {
     imageKeys: string[];
     totalQuantity: number;
     location: string;
-    slots: SlotInput[];
+    availableTime: string;
 };
 
 // 게시글 생성 응답 (상세와 동일 구조)

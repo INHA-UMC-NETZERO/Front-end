@@ -54,7 +54,7 @@ const ItemCard = ({
                     </p>
                 )}
 
-                {/* 카테고리 - 하위 카테고리 */}
+                {/* 카테고리 */}
                 {category && (
                     <div className="flex items-center gap-1.5">
                         <span className="px-2 py-0.5 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
@@ -74,16 +74,6 @@ const ItemCard = ({
                         {description}
                     </p>
                 )}
-
-                {/* 신청하기 버튼 */}
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                    }}
-                    className="w-full h-10 py-2 mt-2 rounded-lg text-body-14M text-white bg-primary-blue-500 hover:bg-primary-blue-600 transition-colors"
-                >
-                    신청하기
-                </button>
             </div>
         </section>
     );

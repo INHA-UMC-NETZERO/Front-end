@@ -1,14 +1,16 @@
 import { useState, useRef } from "react";
 import { Search } from "lucide-react";
 
-const SearchBar = () => {
+interface SearchBarProps {
+    onSearch: (keyword: string) => void;
+}
+
+const SearchBar = ({ onSearch }: SearchBarProps) => {
     const [query, setQuery] = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleSearch = () => {
-        if (!query.trim()) return;
-        // TODO: 검색 로직 구현
-        console.log("검색:", query);
+        onSearch(query.trim());
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -28,7 +30,7 @@ const SearchBar = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="검색하기"
+                placeholder="제품명 검색"
                 className="flex-1 bg-transparent text-body-14M text-base-700 placeholder:text-base-300 outline-none"
             />
             <button onClick={handleSearch}>

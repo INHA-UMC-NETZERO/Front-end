@@ -1,53 +1,46 @@
-interface CarbonGraphProps {
-    monthlyData?: { month: string; value: number }[];
+import { Trophy } from "lucide-react";
+
+interface RankingItem {
+    rank: number;
+    name: string;
+    carbonSaved: number;
 }
 
-const defaultData = [
-    { month: "1월", value: 1.2 },
-    { month: "2월", value: 2.5 },
-    { month: "3월", value: 1.8 },
-    { month: "4월", value: 3.4 },
-    { month: "5월", value: 4.1 },
-    { month: "6월", value: 6.7 },
+const dummyRanking: RankingItem[] = [
+    { rank: 1, name: "인하대 학생회", carbonSaved: 45.2 },
+    { rank: 2, name: "공과대학", carbonSaved: 32.8 },
+    { rank: 3, name: "경영대학", carbonSaved: 28.5 },
+    { rank: 4, name: "자연과학대학", carbonSaved: 21.3 },
+    { rank: 5, name: "사회과학대학", carbonSaved: 15.7 },
 ];
 
-const CarbonGraph = ({ monthlyData = defaultData }: CarbonGraphProps) => {
-    const maxValue = Math.max(...monthlyData.map((d) => d.value));
-
+const CarbonGraph = () => {
     return (
-        <section className="border border-base-300 rounded-2xl p-5">
-            <h2 className="text-body-14B text-base-800 mb-4">월별 탄소 절감량</h2>
-
-            <div className="flex items-end justify-between gap-2 h-40">
-                {monthlyData.map((data) => {
-                    const heightPercent = maxValue > 0 ? (data.value / maxValue) * 100 : 0;
-                    return (
-                        <div
-                            key={data.month}
-                            className="flex flex-col items-center gap-1 flex-1"
-                        >
-                            <span className="text-caption-12M text-primary-blue-500">
-                                {data.value}
-                            </span>
-                            <div className="w-full flex justify-center">
-                                <div
-                                    className="w-8 bg-primary-blue-300 rounded-t-md transition-all duration-300"
-                                    style={{ height: `${heightPercent}%`, minHeight: "4px" }}
-                                />
-                            </div>
-                            <span className="text-caption-12M text-base-400 mt-1">
-                                {data.month}
-                            </span>
-                        </div>
-                    );
-                })}
+        <section className="flex flex-col h-full">
+            <div className="flex items-center gap-2 mb-2">
+                <Trophy size={16} className="text-primary-blue-500" />
+                <h2 className="text-body-14B text-base-800">월별 탄소 절감 랭킹</h2>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-base-200 flex items-center justify-between">
-                <span className="text-caption-12M text-base-400">단위: kg CO₂</span>
-                <span className="text-caption-12M text-primary-blue-500">
-                    총 {monthlyData.reduce((sum, d) => sum + d.value, 0).toFixed(1)} kg 절감
-                </span>
+            <div className="flex flex-col gap-2 flex-1">
+                {dummyRanking.map((item) => (
+                    <div
+                        key={item.rank}
+                        className="flex items-center justify-between py-2 rounded-lg hover:bg-gray-background transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <span
+                                className={`text-body-14B w-5 text-center text-primary-blue-500`}
+                            >
+                                {item.rank}
+                            </span>
+                            <span className="text-caption-12B text-base-700">{item.name}</span>
+                        </div>
+                        <span className="text-caption-12B text-primary-blue-500">
+                            {item.carbonSaved} kg
+                        </span>
+                    </div>
+                ))}
             </div>
         </section>
     );

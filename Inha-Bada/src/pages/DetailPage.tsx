@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { getFeedId } from "../apis/feed";
+import { postPostsRequest } from "../apis/request";
 import type { PostDetail } from "../types/post";
 
 const DetailPage = () => {
@@ -10,6 +11,10 @@ const DetailPage = () => {
     const [item, setItem] = useState<PostDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [requestQuantity, setRequestQuantity] = useState("1");
+    const [pickupTime, setPickupTime] = useState("");
+    const [requestStatus, setRequestStatus] = useState<"idle" | "pending" | "success">("idle");
+    const isSubmittingRef = useRef(false);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -25,9 +30,39 @@ const DetailPage = () => {
                 setIsLoading(false);
             }
         };
-
         fetchDetail();
     }, [id]);
+
+    const handleRequest = async () => {
+        if (!item || isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+
+        const qty = Number(requestQuantity);
+        if (!qty || qty < 1) {
+            alert("수량을 입력해주세요.");
+            isSubmittingRef.current = false;
+            return;
+        }
+        if (!pickupTime.trim()) {
+            alert("수령 시간을 입력해주세요.");
+            isSubmittingRef.current = false;
+            return;
+        }
+
+        setRequestStatus("pending");
+        try {
+            await postPostsRequest(item.id, {
+                quantity: qty,
+                requestedTime: pickupTime,
+            });
+            setRequestStatus("success");
+        } catch (error) {
+            console.error("신청 실패:", error);
+            alert("신청에 실패했습니다.");
+            setRequestStatus("idle");
+            isSubmittingRef.current = false;
+        }
+    };
 
     if (isLoading) {
         return (
@@ -66,7 +101,7 @@ const DetailPage = () => {
 
             {/* 제품 이미지 */}
             <div className="w-full h-72 bg-gray-background">
-                {item.imageUrls.length > 0 ? (
+                {item.imageUrls && item.imageUrls.length > 0 ? (
                     <img
                         src={item.imageUrls[0]}
                         alt={item.title}
@@ -87,6 +122,11 @@ const DetailPage = () => {
                         <span className="px-3 py-1 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
                             {item.category}
                         </span>
+                        {item.subCategory && (
+                            <span className="px-3 py-1 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
+                                {item.subCategory}
+                            </span>
+                        )}
                         <span className={`px-3 py-1 rounded-full text-caption-12M ${
                             item.closed
                                 ? "bg-base-200 text-base-500"
@@ -114,20 +154,6 @@ const DetailPage = () => {
                     </div>
                 </div>
 
-                {/* 수령 시간 */}
-                {item.slots.length > 0 && (
-                    <div>
-                        <h3 className="text-body-14B text-base-700 mb-2">수령 가능 시간</h3>
-                        <div className="flex flex-col gap-1">
-                            {item.slots.map((slot) => (
-                                <p key={slot.id} className="text-caption-12R text-base-500">
-                                    {new Date(slot.startTime).toLocaleString("ko-KR")} ~ {new Date(slot.endTime).toLocaleString("ko-KR")}
-                                </p>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* 구분선 */}
                 <hr className="border-base-200" />
 
@@ -139,13 +165,57 @@ const DetailPage = () => {
                     </p>
                 </div>
 
-                {/* 신청 버튼 */}
-                <button
-                    disabled={item.closed}
-                    className="w-full py-3 mt-4 rounded-xl text-body-16SB text-white bg-primary-blue-500 hover:bg-primary-blue-600 disabled:bg-base-300 disabled:cursor-not-allowed transition-colors"
-                >
-                    {item.closed ? "마감된 게시물입니다" : "신청하기"}
-                </button>
+                {/* 신청 영역 */}
+                {!item.closed && requestStatus !== "success" && (
+                    <div className="flex flex-col gap-3 mt-4">
+                        <div>
+                            <label className="block text-body-14B text-base-700 mb-2">신청 수량</label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                value={requestQuantity}
+                                onChange={(e) => {
+                                    if (/^\d*$/.test(e.target.value)) {
+                                        setRequestQuantity(e.target.value);
+                                    }
+                                }}
+                                placeholder="수량 입력"
+                                className="w-full px-4 py-3 border border-base-300 rounded-xl text-body-14R focus:outline-none focus:border-primary-blue-500 transition-colors"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-body-14B text-base-700 mb-2">수령 시간</label>
+                            <input
+                                type="text"
+                                value={pickupTime}
+                                onChange={(e) => setPickupTime(e.target.value)}
+                                placeholder="예: 평일 10:00 ~ 17:00"
+                                className="w-full px-4 py-3 border border-base-300 rounded-xl text-body-14R focus:outline-none focus:border-primary-blue-500 transition-colors"
+                            />
+                        </div>
+                        <button
+                            onClick={handleRequest}
+                            disabled={!pickupTime.trim() || !requestQuantity || requestStatus === "pending"}
+                            className="w-full py-3 rounded-xl text-body-16SB text-white bg-primary-blue-500 hover:bg-primary-blue-600 disabled:bg-base-300 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {requestStatus === "pending" ? "신청 중..." : "신청하기"}
+                        </button>
+                    </div>
+                )}
+
+                {/* 신청 완료 */}
+                {requestStatus === "success" && (
+                    <div className="mt-4 py-3 rounded-xl text-center text-body-16SB bg-base-200 text-base-500">
+                        신청 완료
+                    </div>
+                )}
+
+                {/* 마감 */}
+                {item.closed && (
+                    <div className="mt-4 py-3 rounded-xl text-center text-body-16SB bg-base-200 text-base-500">
+                        마감된 게시물입니다
+                    </div>
+                )}
             </div>
         </main>
     );

@@ -9,7 +9,7 @@ const PostButton = () => {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="w-14 h-14 rounded-full bg-primary-blue-500 hover:bg-primary-blue-600 text-white shadow-lg flex items-center justify-center transition-colors"
+                className="w-14 h-14 rounded-full bg-primary-blue-400 hover:bg-primary-blue-500 text-white shadow-lg flex items-center justify-center transition-colors"
             >
                 <Plus size={28} />
             </button>

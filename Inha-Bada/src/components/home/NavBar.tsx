@@ -3,11 +3,17 @@ import CategorySetting from "./CategorySetting";
 import CategoryBar from "./CategoryBar";
 import SearchBar from "./SearchBar";
 
-const NavBar = () => {
+interface NavBarProps {
+    sortOrder: "latest" | "oldest";
+    onSortChange: (sort: "latest" | "oldest") => void;
+    onSearch: (keyword: string) => void;
+    onCategoryChange: (category: string, subCategory: string) => void;
+}
+
+const NavBar = ({ sortOrder, onSortChange, onSearch, onCategoryChange }: NavBarProps) => {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
-    const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
 
     const handleCategoryToggle = () => {
         setIsCategoryOpen((prev) => !prev);
@@ -16,6 +22,9 @@ const NavBar = () => {
     const handleCategorySelect = (category: string, sub: string | null) => {
         setSelectedCategory(category || null);
         setSelectedSubCategory(sub);
+        // "전체" 또는 빈 값이면 필터 해제
+        const cat = category === "전체" ? "" : category || "";
+        onCategoryChange(cat, sub || "");
     };
 
     return (
@@ -28,9 +37,9 @@ const NavBar = () => {
                     selectedSubCategory={selectedSubCategory}
                 />
                 <div className="flex gap-2 items-center">
-                    <SearchBar />
+                    <SearchBar onSearch={onSearch} />
                     <button
-                        onClick={() => setSortOrder("latest")}
+                        onClick={() => onSortChange("latest")}
                         className={`px-3 py-2 w-18 rounded-lg text-caption-12M transition-colors ${
                             sortOrder === "latest"
                                 ? "bg-primary-blue-500 text-white"
@@ -40,7 +49,7 @@ const NavBar = () => {
                         최신순
                     </button>
                     <button
-                        onClick={() => setSortOrder("oldest")}
+                        onClick={() => onSortChange("oldest")}
                         className={`px-3 py-2 w-18 rounded-lg text-caption-12M transition-colors ${
                             sortOrder === "oldest"
                                 ? "bg-primary-blue-500 text-white"

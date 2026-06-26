@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, ImagePlus, Loader2 } from "lucide-react";
-import { postPresignedUrl } from "../../apis/uploads";
+import { postUploadFiles } from "../../apis/uploads";
 import { postFeed } from "../../apis/post";
 import type { CreatePostRequest } from "../../types/post";
 
@@ -41,22 +41,13 @@ const PostModal = ({ onClose }: PostModalProps) => {
         };
         reader.readAsDataURL(file);
 
-        // presigned URL 요청 및 S3 업로드
+        // 서버에 multipart/form-data로 업로드
         setIsUploading(true);
         try {
-            const { uploadUrl, key } = await postPresignedUrl({
-                fileName: file.name,
-                contentType: file.type,
-            });
-
-            // S3에 직접 업로드
-            await fetch(uploadUrl, {
-                method: "PUT",
-                headers: { "Content-Type": file.type },
-                body: file,
-            });
-
-            setImageKey(key);
+            const results = await postUploadFiles([file]);
+            if (results.length > 0) {
+                setImageKey(results[0].key);
+            }
         } catch (error) {
             console.error("이미지 업로드 실패:", error);
             alert("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
@@ -96,14 +87,10 @@ const PostModal = ({ onClose }: PostModalProps) => {
                 imageKeys: imageKey ? [imageKey] : [],
                 totalQuantity: Number(quantity),
                 location,
-                slots: pickupTime
-                    ? [{ startTime: pickupTime, endTime: pickupTime }]
-                    : [],
+                availableTime: pickupTime,
             };
 
-            // TODO: 실제 userId를 인증 상태에서 가져오기
-            const userId = 1;
-            await postFeed(userId, requestData);
+            await postFeed(requestData);
 
             onClose();
         } catch (error) {
