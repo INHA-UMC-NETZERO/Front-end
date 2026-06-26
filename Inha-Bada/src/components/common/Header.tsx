@@ -1,7 +1,7 @@
 const Header = () => {
     return (
         <>
-            <header> 이나바다 </header>
+            <header>  </header>
         </>
     )
 }
