@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { X, ImagePlus } from "lucide-react";
+import { X, ImagePlus, Loader2 } from "lucide-react";
+import { postPresignedUrl } from "../../apis/uploads";
+import { postFeed } from "../../apis/post";
+import type { PostControllerRequest } from "../../types/post";
 
 interface PostModalProps {
     onClose: () => void;
@@ -23,15 +26,43 @@ const PostModal = ({ onClose }: PostModalProps) => {
     const [location, setLocation] = useState("");
     const [pickupTime, setPickupTime] = useState("");
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageKey, setImageKey] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        // 미리보기 설정
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // presigned URL 요청 및 S3 업로드
+        setIsUploading(true);
+        try {
+            const { uploadUrl, key } = await postPresignedUrl({
+                fileName: file.name,
+                contentType: file.type,
+            });
+
+            // S3에 직접 업로드
+            await fetch(uploadUrl, {
+                method: "PUT",
+                headers: { "Content-Type": file.type },
+                body: file,
+            });
+
+            setImageKey(key);
+        } catch (error) {
+            console.error("이미지 업로드 실패:", error);
+            alert("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+            setImagePreview(null);
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -52,18 +83,35 @@ const PostModal = ({ onClose }: PostModalProps) => {
         }
     };
 
-    const handleSubmit = () => {
-        console.log({
-            productName,
-            selectedCategory,
-            selectedSubCategory,
-            quantity: Number(quantity),
-            description,
-            location,
-            pickupTime,
-            imagePreview,
-        });
-        onClose();
+    const handleSubmit = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+
+        try {
+            const requestData: PostControllerRequest = {
+                title: productName,
+                description,
+                category: selectedCategory,
+                subCategory: selectedSubCategory,
+                imageKeys: imageKey ? [imageKey] : [],
+                totalQuantity: Number(quantity),
+                location,
+                slots: pickupTime
+                    ? [{ startTime: pickupTime, endTime: pickupTime }]
+                    : [],
+            };
+
+            // TODO: 실제 userId를 인증 상태에서 가져오기
+            const userId = 1;
+            await postFeed(userId, requestData);
+
+            onClose();
+        } catch (error) {
+            console.error("게시글 등록 실패:", error);
+            alert("게시글 등록에 실패했습니다.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -113,11 +161,18 @@ const PostModal = ({ onClose }: PostModalProps) => {
                                     alt="미리보기"
                                     className="w-full h-full object-cover"
                                 />
-                                <div className="absolute inset-0 bg-opacity-black-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                    <p className="text-white text-body-14M">
-                                        변경하기
-                                    </p>
-                                </div>
+                                {isUploading && (
+                                    <div className="absolute inset-0 bg-opacity-black-40 flex items-center justify-center">
+                                        <Loader2 size={32} className="text-white animate-spin" />
+                                    </div>
+                                )}
+                                {!isUploading && (
+                                    <div className="absolute inset-0 bg-opacity-black-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                        <p className="text-white text-body-14M">
+                                            변경하기
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="w-full h-48 bg-primary-blue-100 border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary-blue-500 transition-colors">
@@ -137,6 +192,11 @@ const PostModal = ({ onClose }: PostModalProps) => {
                             className="hidden"
                         />
                     </label>
+                    {imageKey && (
+                        <p className="mt-1 text-caption-12M text-green-600">
+                            ✓ 업로드 완료
+                        </p>
+                    )}
                 </div>
 
                 {/* 카테고리 선택 */}
@@ -251,11 +311,14 @@ const PostModal = ({ onClose }: PostModalProps) => {
                         !productName ||
                         !selectedCategory ||
                         !selectedSubCategory ||
-                        !quantity
+                        !quantity ||
+                        isUploading ||
+                        isSubmitting
                     }
-                    className="w-full py-3 rounded-xl text-body-16SB text-white bg-primary-blue-500 hover:bg-primary-blue-600 disabled:bg-base-300 disabled:cursor-not-allowed transition-colors"
+                    className="w-full py-3 rounded-xl text-body-16SB text-white bg-primary-blue-500 hover:bg-primary-blue-600 disabled:bg-base-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
-                    등록하기
+                    {isSubmitting && <Loader2 size={18} className="animate-spin" />}
+                    {isSubmitting ? "등록 중..." : "등록하기"}
                 </button>
             </div>
         </div>

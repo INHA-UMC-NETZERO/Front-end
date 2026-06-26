@@ -1,61 +1,50 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ItemCard from "../components/home/ItemCard";
 import NavBar from "../components/NavBar";
-
-interface Item {
-    id: number;
-    title: string;
-    organization?: string;
-    quantity?: number;
-    category?: string;
-    subCategory?: string;
-    description?: string;
-    image?: string;
-}
-
-const generateItems = (page: number, pageSize: number): Item[] => {
-    const sampleCategories = ["식품", "음료", "문구 · 행사", "포장 · 정리", "가구 · 공간"];
-    const sampleOrgs = ["인하대 학생회", "공과대학", "경영대학", "자연과학대학"];
-
-    return Array.from({ length: pageSize }, (_, i) => ({
-        id: page * pageSize + i,
-        title: `상품 ${page * pageSize + i + 1}`,
-        organization: sampleOrgs[i % sampleOrgs.length],
-        quantity: Math.floor(Math.random() * 10) + 1,
-        category: sampleCategories[i % sampleCategories.length],
-        subCategory: "기타",
-        description: "상품에 대한 간단한 설명이 여기에 표시됩니다.",
-    }));
-};
+import { getFeeds } from "../apis/feed";
+import type { FeedItem } from "../types/feed";
 
 const HomePage = () => {
-    const [items, setItems] = useState<Item[]>([]);
+    const [items, setItems] = useState<FeedItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [hasNext, setHasNext] = useState(true);
     const observerRef = useRef<HTMLDivElement | null>(null);
     const pageRef = useRef(0);
+    const isLoadingRef = useRef(false);
+    const initializedRef = useRef(false);
 
-    const loadMore = useCallback(() => {
-        if (isLoading) return;
+    const loadMore = useCallback(async () => {
+        if (isLoadingRef.current || !hasNext) return;
+        isLoadingRef.current = true;
         setIsLoading(true);
 
-        const currentPage = pageRef.current;
-        // API 호출 시뮬레이션
-        setTimeout(() => {
-            const newItems = generateItems(currentPage, 10);
-            setItems((prev) => [...prev, ...newItems]);
+        try {
+            const response = await getFeeds("", "", {
+                page: pageRef.current,
+                size: 12,
+            });
+
+            setItems((prev) => [...prev, ...response.content]);
+            setHasNext(response.hasNext);
             pageRef.current += 1;
+        } catch (error) {
+            console.error("피드 불러오기 실패:", error);
+        } finally {
+            isLoadingRef.current = false;
             setIsLoading(false);
-        }, 500);
-    }, [isLoading]);
+        }
+    }, [hasNext]);
 
     useEffect(() => {
+        if (initializedRef.current) return;
+        initializedRef.current = true;
         loadMore();
     }, []);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && !isLoading) {
+                if (entries[0].isIntersecting && !isLoadingRef.current && hasNext) {
                     loadMore();
                 }
             },
@@ -67,7 +56,7 @@ const HomePage = () => {
         }
 
         return () => observer.disconnect();
-    }, [loadMore, isLoading]);
+    }, [loadMore, hasNext]);
 
     return (
         <main className="w-full p-4">
@@ -79,18 +68,18 @@ const HomePage = () => {
                         key={item.id}
                         id={item.id}
                         title={item.title}
-                        image={item.image}
-                        organization={item.organization}
-                        quantity={item.quantity}
+                        image={item.thumbnailUrl}
                         category={item.category}
-                        subCategory={item.subCategory}
-                        description={item.description}
+                        quantity={item.remainingQuantity}
                     />
                 ))}
             </div>
 
             <div ref={observerRef} className="h-10 flex items-center justify-center">
                 {isLoading && <p className="text-caption-12R text-base-400">불러오는 중...</p>}
+                {!hasNext && items.length > 0 && (
+                    <p className="text-caption-12R text-base-400">모든 게시물을 불러왔습니다.</p>
+                )}
             </div>
         </main>
     );
