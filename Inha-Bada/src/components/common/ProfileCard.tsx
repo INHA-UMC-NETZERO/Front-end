@@ -10,7 +10,6 @@ const ProfileCard = () => {
 
     const loggedIn = isLoggedIn();
     const [nickname, setNickname] = useState(localStorage.getItem("userNickname") || "");
-    const [affiliation, setAffiliation] = useState("");
     const [totalCarbonSaved, setTotalCarbonSaved] = useState(0);
     const [givenCount, setGivenCount] = useState(0);
     const [receivedCount, setReceivedCount] = useState(0);
@@ -21,7 +20,6 @@ const ProfileCard = () => {
             try {
                 const summary = await getMyPageSummary();
                 setNickname(summary.profile.nickname);
-                setAffiliation(summary.profile.affiliation);
                 setTotalCarbonSaved(summary.carbon.totalCarbonSavingGram / 1000);
                 setGivenCount(summary.activity.sharedCount);
                 setReceivedCount(summary.activity.receivedCount);
