@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Leaf, Gift, Package } from "lucide-react";
 import { getUserId, isLoggedIn } from "../../utils/auth";
-import { getUserPosts, getUser } from "../../apis/user";
+import { getMyPageSummary } from "../../apis/my-page";
+import { onDataRefresh } from "../../utils/events";
 
 const ProfileCard = () => {
     const navigate = useNavigate();
 
     const loggedIn = isLoggedIn();
-    const userId = getUserId();
-    const nickname = localStorage.getItem("userNickname") || "";
+    const [nickname, setNickname] = useState(localStorage.getItem("userNickname") || "");
+    const [affiliation, setAffiliation] = useState("");
     const [totalCarbonSaved, setTotalCarbonSaved] = useState(0);
     const [givenCount, setGivenCount] = useState(0);
     const [receivedCount, setReceivedCount] = useState(0);
@@ -18,22 +19,20 @@ const ProfileCard = () => {
         if (!loggedIn) return;
         const fetchData = async () => {
             try {
-                const [posts, requests] = await Promise.all([
-                    getUserPosts(),
-                    getUser(),
-                ]);
-                const completed = posts.reduce(
-                    (sum, post) => sum + post.requests.filter((r) => r.status === "COMPLETED").length,
-                    0
-                );
-                setTotalCarbonSaved(completed * 2.5);
-                setGivenCount(posts.length);
-                setReceivedCount(requests.length);
+                const summary = await getMyPageSummary();
+                setNickname(summary.profile.nickname);
+                setAffiliation(summary.profile.affiliation);
+                setTotalCarbonSaved(summary.carbon.totalCarbonSavingGram / 1000);
+                setGivenCount(summary.activity.sharedCount);
+                setReceivedCount(summary.activity.receivedCount);
             } catch (error) {
                 console.error("프로필 데이터 불러오기 실패:", error);
             }
         };
         fetchData();
+        // 전역 새로고침 이벤트 구독 (실시간 갱신)
+        const unsubscribe = onDataRefresh(fetchData);
+        return unsubscribe;
     }, [loggedIn]);
 
     return (
@@ -51,8 +50,8 @@ const ProfileCard = () => {
                 <div className="flex flex-col">
                     {loggedIn ? (
                         <>
-                            <p className="text-body-14B text-base-800">{userId}</p>
-                            <p className="text-caption-12R text-base-400">{nickname}</p>
+                            <p className="text-body-14B text-base-800"> User {getUserId()}</p>
+                            <p className="text-caption-12R text-base-400">{nickname || "소속 없음"}</p>
                         </>
                     ) : (
                         <p className="text-body-14B text-base-400">로그인 필요</p>

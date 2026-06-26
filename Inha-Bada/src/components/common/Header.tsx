@@ -3,6 +3,7 @@ import { Bell, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getNotifications, patchNotifications, subscribeNotifications } from "../../apis/notification";
 import { isLoggedIn } from "../../utils/auth";
+import { emitDataRefresh } from "../../utils/events";
 import type { NotificationItem } from "../../types/notification";
 
 const Header = () => {
@@ -39,6 +40,8 @@ const Header = () => {
                 // 데이터가 없으면 전체 재조회
                 fetchNotifications();
             }
+            // 전역 데이터 새로고침 (사이드바/마이페이지 등 실시간 갱신)
+            emitDataRefresh();
         });
 
         return () => {

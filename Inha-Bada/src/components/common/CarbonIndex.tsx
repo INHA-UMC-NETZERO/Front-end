@@ -1,54 +1,30 @@
 import { useEffect, useState } from "react";
 import { Leaf } from "lucide-react";
-import { getUserPosts } from "../../apis/user";
+import { getMyPageSummary } from "../../apis/my-page";
 import { isLoggedIn } from "../../utils/auth";
-
-const normalizeStatus = (status: string) => {
-    switch ((status || "").trim()) {
-        case "신청중":
-        case "신청 중":
-        case "대기중":
-        case "대기":
-            return "PENDING";
-        case "예약중":
-        case "승인":
-        case "승인됨":
-            return "APPROVED";
-        case "거절됨":
-        case "거절":
-            return "REJECTED";
-        case "전달완료":
-        case "완료":
-            return "COMPLETED";
-        default:
-            return (status || "").toUpperCase().trim();
-    }
-};
+import { onDataRefresh } from "../../utils/events";
 
 const CarbonIndex = () => {
+    const [totalCarbonKg, setTotalCarbonKg] = useState(0);
     const [completedCount, setCompletedCount] = useState(0);
-    const [totalPosts, setTotalPosts] = useState(0);
+    const [completionRate, setCompletionRate] = useState(0);
 
     useEffect(() => {
         if (!isLoggedIn()) return;
         const fetchData = async () => {
             try {
-                const posts = await getUserPosts();
-                setTotalPosts(posts.length);
-                const completed = posts.reduce(
-                    (sum, post) => sum + post.requests.filter((r) => normalizeStatus(r.status) === "COMPLETED").length,
-                    0
-                );
-                setCompletedCount(completed);
+                const summary = await getMyPageSummary();
+                setTotalCarbonKg(summary.carbon.totalCarbonSavingGram / 1000);
+                setCompletedCount(summary.activity.completedDeliveryCount);
+                setCompletionRate(summary.activity.deliveryCompletionRate);
             } catch (error) {
                 console.error("탄소 지표 불러오기 실패:", error);
             }
         };
         fetchData();
+        const unsubscribe = onDataRefresh(fetchData);
+        return unsubscribe;
     }, []);
-
-    const totalCarbonSaved = completedCount * 2.5;
-    const goalPercent = totalPosts > 0 ? Math.min(Math.round((completedCount / totalPosts) * 100), 100) : 0;
 
     return (
         <div className="flex flex-col gap-3">
@@ -61,7 +37,7 @@ const CarbonIndex = () => {
                 <div className="flex items-center justify-between">
                     <span className="text-caption-12M text-base-500">누적 CO₂ 절감</span>
                     <span className="text-body-14B text-green-500">
-                        {totalCarbonSaved.toFixed(1)} kg
+                        {totalCarbonKg.toFixed(1)} kg
                     </span>
                 </div>
 
@@ -77,11 +53,11 @@ const CarbonIndex = () => {
             <div className="w-full h-2 bg-base-200 rounded-full overflow-hidden">
                 <div
                     className="h-full bg-green-500 rounded-full transition-all duration-300"
-                    style={{ width: `${goalPercent}%` }}
+                    style={{ width: `${completionRate}%` }}
                 />
             </div>
             <p className="text-caption-12M text-base-400">
-                전달 완료율 {goalPercent}%
+                전달 완료율 {completionRate}%
             </p>
         </div>
     );

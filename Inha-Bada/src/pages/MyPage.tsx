@@ -1,37 +1,46 @@
 import { useEffect, useState } from "react";
 import { Leaf, Package, CheckCircle, ArrowLeft, Recycle, TreePine, Gift, TrendingDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getUserPosts, getUser } from "../apis/user";
+import { getMyPageSummary, getMyPageRequests, getMyPagePosts } from "../apis/my-page";
 import { patchPostsApprove, patchPostsReject, patchPostsComplete } from "../apis/request";
 import { postLogout } from "../apis/auth";
 import { logout } from "../utils/auth";
-import type { UserPost, UserRequest } from "../types/user";
+import { onDataRefresh, emitDataRefresh } from "../utils/events";
+import type {
+    MyPageSummaryResponse,
+    MyPagePost,
+    MyPageRequest,
+    MonthlyCarbon,
+} from "../types/my-page";
 
-const monthlyData = [
-    { month: "1월", value: 1.2 },
-    { month: "2월", value: 2.5 },
-    { month: "3월", value: 1.8 },
-    { month: "4월", value: 3.4 },
-    { month: "5월", value: 4.1 },
-    { month: "6월", value: 6.7 },
-];
+const gramToKg = (gram: number) => gram / 1000;
 
-const MonthlyChart = () => {
-    const maxValue = Math.max(...monthlyData.map((d) => d.value));
+const MonthlyChart = ({ data }: { data: MonthlyCarbon[] }) => {
+    if (!data || data.length === 0) {
+        return (
+            <p className="text-caption-12R text-base-400 py-8 text-center">
+                데이터가 없습니다.
+            </p>
+        );
+    }
+    const maxValue = Math.max(...data.map((d) => d.carbonSavingGram), 1);
+    const TRACK_HEIGHT = 100; // px
+
     return (
-        <div className="flex items-end justify-between gap-1 h-32">
-            {monthlyData.map((data) => {
-                const heightPercent = maxValue > 0 ? (data.value / maxValue) * 100 : 0;
+        <div className="flex items-end justify-between gap-1">
+            {data.map((d) => {
+                const heightPx = Math.max((d.carbonSavingGram / maxValue) * TRACK_HEIGHT, 3);
+                const label = d.month.slice(5).replace(/^0/, "") + "월";
                 return (
-                    <div key={data.month} className="flex flex-col items-center gap-0.5 flex-1">
-                        <span className="text-[10px] text-primary-blue-500">{data.value}</span>
-                        <div className="w-full flex justify-center">
-                            <div
-                                className="w-5 bg-primary-blue-300 rounded-t-sm"
-                                style={{ height: `${heightPercent}%`, minHeight: "3px" }}
-                            />
-                        </div>
-                        <span className="text-[10px] text-base-400">{data.month}</span>
+                    <div key={d.month} className="flex flex-col items-center gap-0.5 flex-1">
+                        <span className="text-[10px] text-primary-blue-500">
+                            {gramToKg(d.carbonSavingGram).toFixed(1)}
+                        </span>
+                        <div
+                            className="w-5 bg-primary-blue-300 rounded-t-sm transition-all duration-500"
+                            style={{ height: `${heightPx}px` }}
+                        />
+                        <span className="text-[10px] text-base-400">{label}</span>
                     </div>
                 );
             })}
@@ -41,43 +50,72 @@ const MonthlyChart = () => {
 
 const MyPage = () => {
     const navigate = useNavigate();
-    const [myPosts, setMyPosts] = useState<UserPost[]>([]);
-    const [myRequests, setMyRequests] = useState<UserRequest[]>([]);
+    const [summary, setSummary] = useState<MyPageSummaryResponse | null>(null);
+    const [myPosts, setMyPosts] = useState<MyPagePost[]>([]);
+    const [myRequests, setMyRequests] = useState<MyPageRequest[]>([]);
     const [activeTab, setActiveTab] = useState<"registered" | "reserved">("registered");
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(0);
     const PAGE_SIZE = 10;
 
     useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const [posts, requests] = await Promise.all([
-                    getUserPosts(),
-                    getUser(),
-                ]);
-                setMyPosts(posts);
-                setMyRequests(requests);
-            } catch (error) {
-                console.error("마이페이지 데이터 불러오기 실패:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchData();
+        // 전역 새로고침 이벤트 구독 (다른 사람이 내 게시물에 신청 시 등 실시간 반영)
+        const unsubscribe = onDataRefresh(() => {
+            refreshData();
+        });
+        return unsubscribe;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // 주기적 폴링으로 새 신청 등 실시간 반영 (SSE 보조)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            refreshData();
+        }, 15000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const [summaryRes, posts, requests] = await Promise.all([
+                getMyPageSummary(),
+                getMyPagePosts(),
+                getMyPageRequests(),
+            ]);
+            setSummary(summaryRes);
+            setMyPosts(posts);
+            setMyRequests(requests);
+        } catch (error) {
+            console.error("마이페이지 데이터 불러오기 실패:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 탄소 지표/요약만 다시 불러와 실시간 반영 (전체 로딩 표시 없이)
+    const refreshData = async () => {
+        try {
+            const [summaryRes, posts, requests] = await Promise.all([
+                getMyPageSummary(),
+                getMyPagePosts(),
+                getMyPageRequests(),
+            ]);
+            setSummary(summaryRes);
+            setMyPosts(posts);
+            setMyRequests(requests);
+        } catch (error) {
+            console.error("마이페이지 갱신 실패:", error);
+        }
+    };
 
     const handleApprove = async (requestId: number) => {
         try {
             await patchPostsApprove(requestId);
-            setMyPosts((prev) =>
-                prev.map((post) => ({
-                    ...post,
-                    requests: post.requests.map((req) =>
-                        req.requestId === requestId ? { ...req, status: "APPROVED" as const } : req
-                    ),
-                }))
-            );
+            await refreshData();
+            emitDataRefresh();
         } catch (error) {
             console.error("승인 실패:", error);
             alert("승인에 실패했습니다.");
@@ -87,14 +125,8 @@ const MyPage = () => {
     const handleReject = async (requestId: number) => {
         try {
             await patchPostsReject(requestId);
-            setMyPosts((prev) =>
-                prev.map((post) => ({
-                    ...post,
-                    requests: post.requests.map((req) =>
-                        req.requestId === requestId ? { ...req, status: "REJECTED" as const } : req
-                    ),
-                }))
-            );
+            await refreshData();
+            emitDataRefresh();
         } catch (error) {
             console.error("거절 실패:", error);
             alert("거절에 실패했습니다.");
@@ -104,14 +136,8 @@ const MyPage = () => {
     const handleComplete = async (requestId: number) => {
         try {
             await patchPostsComplete(requestId);
-            setMyPosts((prev) =>
-                prev.map((post) => ({
-                    ...post,
-                    requests: post.requests.map((req) =>
-                        req.requestId === requestId ? { ...req, status: "COMPLETED" as const } : req
-                    ),
-                }))
-            );
+            await refreshData();
+            emitDataRefresh();
         } catch (error) {
             console.error("전달 완료 실패:", error);
             alert("전달 완료에 실패했습니다.");
@@ -130,8 +156,7 @@ const MyPage = () => {
     };
 
     const normalizeStatus = (status: string) => {
-        const s = (status || "").toUpperCase().trim();
-        switch (status) {
+        switch ((status || "").trim()) {
             case "신청중":
             case "신청 중":
             case "대기중":
@@ -148,7 +173,7 @@ const MyPage = () => {
             case "완료":
                 return "COMPLETED";
             default:
-                return s;
+                return (status || "").toUpperCase().trim();
         }
     };
 
@@ -182,15 +207,20 @@ const MyPage = () => {
         }
     };
 
-    const completedCount = myPosts.reduce(
-        (sum, post) => sum + post.requests.filter((r) => normalizeStatus(r.status) === "COMPLETED").length,
-        0
+    // 활동/탄소 요약 (서버 데이터 우선, 없으면 0)
+    const activity = summary?.activity;
+    const totalCarbonKg = gramToKg(summary?.carbon.totalCarbonSavingGram ?? 0);
+    const sharedCount = activity?.sharedCount ?? myPosts.length;
+    const receivedCount = activity?.receivedCount ?? myRequests.length;
+    const completedDeliveryCount = activity?.completedDeliveryCount ?? 0;
+    const deliveryCompletionRate = activity?.deliveryCompletionRate ?? 0;
+    const monthlyCarbon = summary?.monthlyCarbon ?? [];
+    const totalMonthlyKg = gramToKg(
+        monthlyCarbon.reduce((sum, d) => sum + d.carbonSavingGram, 0)
     );
-    const totalCarbonSaved = completedCount * 2.5; // 건당 약 2.5kg 추정
 
-    // 게시물의 상태 우선순위 계산
-    // 1: 예약중(APPROVED 요청 존재) > 2: 예약 신청(PENDING) > 3: 일반(요청 없음) > 4: 전달완료(COMPLETED) > 5: 거절됨(REJECTED)
-    const getPostPriority = (post: UserPost) => {
+    // 게시물 상태 우선순위: 예약중 > 예약신청 > 일반 > 전달완료 > 거절됨
+    const getPostPriority = (post: MyPagePost) => {
         const statuses = (post.requests || []).map((r) => normalizeStatus(r.status));
         if (statuses.includes("APPROVED")) return 1;
         if (statuses.includes("PENDING")) return 2;
@@ -204,7 +234,6 @@ const MyPage = () => {
         const pa = getPostPriority(a);
         const pb = getPostPriority(b);
         if (pa !== pb) return pa - pb;
-        // 같은 상태면 최신순 (createdAt desc)
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
@@ -242,27 +271,26 @@ const MyPage = () => {
                     </div>
 
                     <div className="flex flex-col gap-4">
-                        {/* 2x2 지표 카드 */}
                         <div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="flex flex-col items-center p-4 bg-green-50 rounded-xl">
                                     <Recycle size={18} className="text-green-500 mb-1" />
-                                    <span className="text-heading-18B text-green-700">{totalCarbonSaved.toFixed(1)}</span>
+                                    <span className="text-heading-18B text-green-700">{totalCarbonKg.toFixed(1)}</span>
                                     <span className="text-caption-12M text-green-500 mt-1">kg CO₂ 절감</span>
                                 </div>
                                 <div className="flex flex-col items-center p-4 bg-green-50 rounded-xl">
                                     <TreePine size={18} className="text-green-500 mb-1" />
-                                    <span className="text-heading-18B text-green-700">{(totalCarbonSaved / 22).toFixed(1)}</span>
+                                    <span className="text-heading-18B text-green-700">{(totalCarbonKg / 22).toFixed(1)}</span>
                                     <span className="text-caption-12M text-green-500 mt-1">나무 환산 (그루)</span>
                                 </div>
                                 <div className="flex flex-col items-center p-4 bg-green-50 rounded-xl">
                                     <Gift size={18} className="text-green-500 mb-1" />
-                                    <span className="text-heading-18B text-green-700">{myPosts.length}</span>
+                                    <span className="text-heading-18B text-green-700">{sharedCount}</span>
                                     <span className="text-caption-12M text-green-500 mt-1">나눔 횟수</span>
                                 </div>
                                 <div className="flex flex-col items-center p-4 bg-green-50 rounded-xl">
                                     <Package size={18} className="text-green-500 mb-1" />
-                                    <span className="text-heading-18B text-green-700">{myRequests.length}</span>
+                                    <span className="text-heading-18B text-green-700">{receivedCount}</span>
                                     <span className="text-caption-12M text-green-500 mt-1">나눔 받은 횟수</span>
                                 </div>
                             </div>
@@ -272,17 +300,18 @@ const MyPage = () => {
                                 <div className="flex items-center justify-between mb-1">
                                     <span className="text-caption-12M text-base-500">전달 완료율</span>
                                     <span className="text-caption-12B text-green-600">
-                                        {myPosts.length > 0 ? Math.round((completedCount / myPosts.length) * 100) : 0}%
+                                        {deliveryCompletionRate}%
                                     </span>
                                 </div>
                                 <div className="w-full h-2 bg-base-200 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-green-500 rounded-full transition-all duration-300"
-                                        style={{
-                                            width: `${myPosts.length > 0 ? (completedCount / myPosts.length) * 100 : 0}%`,
-                                        }}
+                                        style={{ width: `${deliveryCompletionRate}%` }}
                                     />
                                 </div>
+                                <p className="text-caption-12R text-base-400 mt-1">
+                                    전달 완료 {completedDeliveryCount}건
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -295,11 +324,11 @@ const MyPage = () => {
                         월별 탄소 절감량
                     </h2>
                     <div className="flex-1 flex flex-col justify-end">
-                        <MonthlyChart />
+                        <MonthlyChart data={monthlyCarbon} />
                         <div className="mt-3 pt-3 border-t border-base-200 flex items-center justify-between">
                             <span className="text-caption-12M text-base-400">최근 6개월 동안</span>
                             <span className="text-caption-12B text-primary-blue-500">
-                                총 {monthlyData.reduce((sum, d) => sum + d.value, 0).toFixed(1)} kg 절감
+                                총 {totalMonthlyKg.toFixed(1)} kg 절감
                             </span>
                         </div>
                     </div>
@@ -344,9 +373,16 @@ const MyPage = () => {
                                     <div key={post.postId} className="p-4 bg-white border border-base-300 rounded-xl">
                                         <div className="flex items-center justify-between mb-2">
                                             <p className="text-body-14B text-base-800 truncate">{post.title}</p>
-                                            <span className="px-2 py-0.5 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
-                                                {post.category}
-                                            </span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="px-2 py-0.5 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
+                                                    {post.category}
+                                                </span>
+                                                {post.subCategory && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
+                                                        {post.subCategory}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-caption-12R text-base-400 mb-3">
                                             잔여 {post.remainingQuantity} / {post.totalQuantity}개
@@ -446,25 +482,38 @@ const MyPage = () => {
                             )}
                         </div>
                     )}
+
+                    {/* 내가 신청한 물품 */}
                     {activeTab === "reserved" && (
                         <div className="flex flex-col gap-3">
                             {myRequests.length === 0 ? (
                                 <div className="py-12 text-center text-body-14R text-base-400">신청한 물품이 없습니다.</div>
                             ) : (
                                 myRequests.map((req) => {
-                                    const isReserved = normalizeStatus(req.status) === "APPROVED";
                                     return (
                                     <div
                                         key={req.requestId}
-                                        className={`flex items-center justify-between p-4 border rounded-xl ${
-                                            isReserved
-                                                ? "bg-yellow-50 border-yellow-300"
-                                                : "bg-white border-base-300"
-                                        }`}
+                                        className="flex items-center justify-between p-4 border rounded-xl bg-white border-base-300"
                                     >
                                         <div className="flex flex-col gap-1">
                                             <p className="text-body-14B text-base-800">{req.postTitle}</p>
-                                            <p className="text-caption-12R text-base-400">{req.quantity}개</p>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="px-2 py-0.5 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
+                                                    {req.postCategory}
+                                                </span>
+                                                {req.postSubCategory && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-primary-blue-100 text-caption-12M text-primary-blue-700">
+                                                        {req.postSubCategory}
+                                                    </span>
+                                                )}
+                                                <span className="text-caption-12R text-base-400 ml-1">{req.quantity}개</span>
+                                                {normalizeStatus(req.status) === "COMPLETED" && req.carbonSavingGram != null && (
+                                                    <span className="text-caption-12M text-green-600 flex items-center gap-1 ml-1">
+                                                        <Leaf size={12} />
+                                                        {gramToKg(req.carbonSavingGram).toFixed(1)} kg CO₂ 절감
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <span className={`px-2 py-0.5 rounded-full text-caption-12M ${getStatusBadge(req.status)}`}>
                                             {getStatusText(req.status)}

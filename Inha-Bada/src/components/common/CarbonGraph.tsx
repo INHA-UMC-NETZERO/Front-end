@@ -1,20 +1,26 @@
+import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
-
-interface RankingItem {
-    rank: number;
-    name: string;
-    carbonSaved: number;
-}
-
-const dummyRanking: RankingItem[] = [
-    { rank: 1, name: "인하대 학생회", carbonSaved: 45.2 },
-    { rank: 2, name: "공과대학", carbonSaved: 32.8 },
-    { rank: 3, name: "경영대학", carbonSaved: 28.5 },
-    { rank: 4, name: "자연과학대학", carbonSaved: 21.3 },
-    { rank: 5, name: "사회과학대학", carbonSaved: 15.7 },
-];
+import { getCarbonMonthlyRanking } from "../../apis/ranking";
+import { onDataRefresh } from "../../utils/events";
+import type { CarbonRankingItem } from "../../types/ranking";
 
 const CarbonGraph = () => {
+    const [items, setItems] = useState<CarbonRankingItem[]>([]);
+
+    useEffect(() => {
+        const fetchRanking = async () => {
+            try {
+                const res = await getCarbonMonthlyRanking(5);
+                setItems(res.items);
+            } catch (error) {
+                console.error("랭킹 불러오기 실패:", error);
+            }
+        };
+        fetchRanking();
+        const unsubscribe = onDataRefresh(fetchRanking);
+        return unsubscribe;
+    }, []);
+
     return (
         <section className="flex flex-col h-full">
             <div className="flex items-center gap-2 mb-2">
@@ -23,24 +29,28 @@ const CarbonGraph = () => {
             </div>
 
             <div className="flex flex-col gap-2 flex-1">
-                {dummyRanking.map((item) => (
-                    <div
-                        key={item.rank}
-                        className="flex items-center justify-between py-2 rounded-lg hover:bg-gray-background transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <span
-                                className={`text-body-14B w-5 text-center text-primary-blue-500`}
-                            >
-                                {item.rank}
+                {items.length === 0 ? (
+                    <p className="text-caption-12R text-base-400 py-4 text-center">
+                        랭킹 데이터가 없습니다.
+                    </p>
+                ) : (
+                    items.map((item) => (
+                        <div
+                            key={item.rank}
+                            className="flex items-center justify-between py-2 rounded-lg hover:bg-gray-background transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-body-14B w-5 text-center text-primary-blue-500">
+                                    {item.rank}
+                                </span>
+                                <span className="text-caption-12B text-base-700">{item.nickname}</span>
+                            </div>
+                            <span className="text-caption-12B text-primary-blue-500">
+                                {(item.carbonSavingGram / 1000).toFixed(1)} kg
                             </span>
-                            <span className="text-caption-12B text-base-700">{item.name}</span>
                         </div>
-                        <span className="text-caption-12B text-primary-blue-500">
-                            {item.carbonSaved} kg
-                        </span>
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
         </section>
     );
