@@ -1,1 +1,279 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import 'swiper/css';
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('./assets/fonts/PretendardVariable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@theme {
+    --font-sans: 'Pretendard', Arial, sans-serif;
+
+    /* Primary Blue Scale */
+    --color-primary-blue-100: #dbebfe;
+    --color-primary-blue-200: #b8d4fe;
+    --color-primary-blue-300: #94bbfd;
+    --color-primary-blue-400: #79a6fb;
+    --color-primary-blue-500: #4e83f9;
+    --color-primary-blue-600: #3964d6;
+    --color-primary-blue-700: #2749b3;
+    --color-primary-blue-800: #183290;
+    --color-primary-blue-900: #0e2277;
+
+    /* Deep Blue Scale */
+    --color-deep-blue-100: #ded6ff;
+    --color-deep-blue-200: #bdadff;
+    --color-deep-blue-300: #9a84ff;
+    --color-deep-blue-400: #7e66ff;
+    --color-deep-blue-500: #5133ff;
+    --color-deep-blue-600: #3d25db;
+    --color-deep-blue-700: #2c19b7;
+    --color-deep-blue-800: #1d1093;
+    --color-deep-blue-900: #13097a;
+
+    /* Base Scale */
+    --color-base-100: #ffffff;
+    --color-base-200: #e3e3e3;
+    --color-base-300: #d6d6d6;
+    --color-base-400: #a6a6a6;
+    --color-base-500: #5d5d5d;
+    --color-base-600: #454545;
+    --color-base-700: #2c2c2c;
+    --color-base-800: #1b1b1b;
+    --color-base-900: #111111;
+
+    --color-white-background: #f5f8ff;
+    --color-gray-background: #f5f5f5;
+
+    /* Opacity Scale */
+    --color-opacity-black-80: rgba(0, 0, 0, 0.8);
+    --color-opacity-black-60: rgba(0, 0, 0, 0.6);
+    --color-opacity-black-40: rgba(0, 0, 0, 0.4);
+    --color-opacity-black-20: rgba(0, 0, 0, 0.2);
+}
+
+.font-en {
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+@theme {
+    /* Typography */
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --letter-spacing-2: -0.02em;
+    --letter-spacing-1: -0.01em;
+    --letter-spacing: 0em;
+
+    --line-height-120: 1.2em;
+    --line-height-140: 1.4em;
+    --line-height-160: 1.6em;
+
+    --font-size-10: 10px;
+    --font-size-12: 12px;
+    --font-size-14: 14px;
+    --font-size-16: 16px;
+    --font-size-18: 18px;
+    --font-size-20: 20px;
+
+    --font-size-24: 24px;
+    --font-size-28: 28px;
+
+  /* Typography */
+    --text-10: var(--font-size-10);
+    --text-12: var(--font-size-12);
+    --text-14: var(--font-size-14);
+    --text-16: var(--font-size-16);
+    --text-18: var(--font-size-18);
+    --text-20: var(--font-size-20);
+
+    --text-24: var(--font-size-24);
+    --text-28: var(--font-size-28);
+}
+
+/* heading */
+@utility text-heading-28B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-28);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-heading-24B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-24);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-heading-20B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-20);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-heading-18B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-18);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-heading-18SB {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--text-18);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+/* body */
+@utility text-body-16B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-16);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-body-16SB {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--text-16);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-body-16M {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--text-16);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-body-16R {
+    font-weight: var(--font-weight-regular);
+    font-size: var(--text-16);
+    letter-spacing: var(--letter-spacing-2);
+    line-height: var(--line-height-140);
+}
+
+@utility text-body-14B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-14);
+    letter-spacing: var(--letter-spacing-1);
+    line-height: var(--line-height-160);
+}
+
+@utility text-body-14M {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--text-14);
+    letter-spacing: var(--letter-spacing-1);
+    line-height: var(--line-height-140);
+}
+
+@utility text-body-14R {
+    font-weight: var(--font-weight-regular);
+    font-size: var(--text-14);
+    letter-spacing: var(--letter-spacing-1);
+    line-height: var(--line-height-160);
+}
+
+/* caption */
+@utility text-caption-12B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-12);
+    letter-spacing: var(--letter-spacing);
+    line-height: var(--line-height-140);
+}
+
+@utility text-caption-12M {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--text-12);
+    letter-spacing: var(--letter-spacing);
+    line-height: var(--line-height-140);
+}
+
+@utility text-caption-12R {
+    font-weight: var(--font-weight-regular);
+    font-size: var(--text-12);
+    letter-spacing: var(--letter-spacing);
+    line-height: var(--line-height-140);
+}
+
+@utility text-caption-10M {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--text-10);
+    letter-spacing: var(--letter-spacing);
+    line-height: var(--line-height-160);
+}
+
+/* ENG Typo */
+@utility text-heading-eng-28B {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-28);
+    line-height: var(--line-height-120);
+    letter-spacing: var(--letter-spacing-2);
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+@utility text-heading-eng-24SB {
+    font-size: var(--font-size-24);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-120);
+    letter-spacing: var(--letter-spacing-2);
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+@utility text-heading-eng-20SB {
+    font-size: var(--font-size-20);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-120);
+    letter-spacing: var(--letter-spacing-2);
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+@utility text-heading-eng-18SB {
+    font-size: var(--font-size-18);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-140);
+    letter-spacing: var(--letter-spacing-2);
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+@utility text-heading-eng-16B {
+    font-size: var(--font-size-16);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-140);
+    letter-spacing: var(--letter-spacing-2);
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+@utility text-body-eng-16SB {
+    font-size: var(--font-size-16);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-140);
+    letter-spacing: var(--letter-spacing-2);
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+@utility text-body-eng-14SB {
+    font-size: var(--font-size-14);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-140);
+    letter-spacing: var(--letter-spacing-2);
+    font-family: 'Montserrat', 'Pretendard', Arial, sans-serif !important;
+}
+
+
+/* Scrollbar Hide */
+@utility scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
