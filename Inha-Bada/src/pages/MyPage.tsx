@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Leaf, Package, CheckCircle, ArrowLeft, Recycle, TreePine, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import CarbonGraph from "../components/CarbonGraph";
 
 type ItemStatus = "예약중" | "전달완료";
 
@@ -138,9 +137,6 @@ const MyPage = () => {
                         </div>
                     </div>
                 </section>
-
-                {/* 탄소 절감 그래프 */}
-                <CarbonGraph />
 
                 {/* 나눔/예약 현황 탭 */}
                 <section>

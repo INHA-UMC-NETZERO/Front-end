@@ -1,6 +1,6 @@
-import CarbonGraph from "../CarbonGraph";
-import CarbonIndex from "../CarbonIndex";
-import ProfileCard from "../ProfileCard";
+import CarbonGraph from "./CarbonGraph";
+import CarbonIndex from "./CarbonIndex";
+import ProfileCard from "./ProfileCard";
 
 const SideBar = () => {
     return (

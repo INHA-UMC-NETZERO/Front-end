@@ -1,7 +1,7 @@
-import type { FeedControllerGetResponse, FeedControllerPostResponse, Pageable } from "../types/feed";
+import type { PostDetail, PostListResponse, Pageable } from "../types/post";
 import axiosInstance from "./axios";
 
-export const getFeeds = async (category: string, keyword: string, pageable: Pageable): Promise<FeedControllerPostResponse> => {
+export const getFeeds = async (category: string, keyword: string, pageable: Pageable): Promise<PostListResponse> => {
     const response = await axiosInstance.get(`/api/posts`, {
         params: {
             category: category || undefined,
@@ -15,7 +15,7 @@ export const getFeeds = async (category: string, keyword: string, pageable: Page
     return response.data;
 }
 
-export const getFeedId = async (id: number): Promise<FeedControllerGetResponse> => {
+export const getFeedId = async (id: number): Promise<PostDetail> => {
     const response = await axiosInstance.get(`/api/posts/${id}`);
 
     return response.data;

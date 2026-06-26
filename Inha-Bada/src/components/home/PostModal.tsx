@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, ImagePlus, Loader2 } from "lucide-react";
 import { postPresignedUrl } from "../../apis/uploads";
 import { postFeed } from "../../apis/post";
-import type { PostControllerRequest } from "../../types/post";
+import type { CreatePostRequest } from "../../types/post";
 
 interface PostModalProps {
     onClose: () => void;
@@ -88,7 +88,7 @@ const PostModal = ({ onClose }: PostModalProps) => {
         setIsSubmitting(true);
 
         try {
-            const requestData: PostControllerRequest = {
+            const requestData: CreatePostRequest = {
                 title: productName,
                 description,
                 category: selectedCategory,

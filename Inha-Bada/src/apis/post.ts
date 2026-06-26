@@ -1,7 +1,7 @@
-import type { PostControllerRequest, PostControllerResponse } from "../types/post";
+import type { CreatePostRequest, CreatePostResponse } from "../types/post";
 import axiosInstance from "./axios";
 
-export const postFeed = async (userId: number, data: PostControllerRequest): Promise<PostControllerResponse> => {
+export const postFeed = async (userId: number, data: CreatePostRequest): Promise<CreatePostResponse> => {
     const response = await axiosInstance.post(`/api/posts`, data, {
         params: {
             userId,

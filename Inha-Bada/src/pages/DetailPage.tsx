@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { getFeedId } from "../apis/feed";
-import type { FeedControllerGetResponse } from "../types/feed";
+import type { PostDetail } from "../types/post";
 
 const DetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [item, setItem] = useState<FeedControllerGetResponse | null>(null);
+    const [item, setItem] = useState<PostDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

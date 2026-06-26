@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import PostModal from "./home/PostModal";
+import PostModal from "../home/PostModal";
 
 const PostButton = () => {
     const [isOpen, setIsOpen] = useState(false);

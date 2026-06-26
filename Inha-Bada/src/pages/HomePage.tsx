@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ItemCard from "../components/home/ItemCard";
-import NavBar from "../components/NavBar";
+import NavBar from "../components/home/NavBar";
 import { getFeeds } from "../apis/feed";
-import type { FeedItem } from "../types/feed";
+import type { PostSummary } from "../types/post";
 
 const HomePage = () => {
-    const [items, setItems] = useState<FeedItem[]>([]);
+    const [items, setItems] = useState<PostSummary[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [hasNext, setHasNext] = useState(true);
     const observerRef = useRef<HTMLDivElement | null>(null);
